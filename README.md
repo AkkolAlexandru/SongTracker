@@ -14,3 +14,5 @@ Change access_key and secret_key with API keys from acrcloud.com
 In terminal, run 'pip install -r requirements.txt'
 
 Run
+
+Requirements: python
