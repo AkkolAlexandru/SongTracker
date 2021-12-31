@@ -1,6 +1,6 @@
 import tkinter
 import threading
-from acrcloud.recognizer import ACRCloudRecognizer
+from recognizer import ACRCloudRecognizer
 from scipy.io.wavfile import write
 from time import sleep
 import sounddevice as sd
@@ -10,6 +10,7 @@ from graph import plot
 
 # colors
 babyblue = "#CDDEFF"
+darkgray = "#707070"
 
 class AsyncRecognizer(threading.Thread):
     def __init__(self):
@@ -28,6 +29,7 @@ class AsyncRecognizer(threading.Thread):
             last_song = "n/a"
             data = open("output.json", "r")
             db = json.load(data)
+            data.close()
             song_playing = "n/a"
 
             def timer(duration):
@@ -41,8 +43,8 @@ class AsyncRecognizer(threading.Thread):
                 duration = 8  # recording duration in seconds
                 print("Recording..........")
                 app.lowerlabel.config(text="Recording...")
-                if last_song != "n/a":
-                    app.upperlabel.config(text=f"The last song was {last_song}.")
+                if last_song != "n/a" and last_song_recognized:
+                    app.upperlabel.config(text=f"""The last song was "{last_song}".""", fg = darkgray)
                 # start recording
                 recording = sd.rec(int(duration * fs), samplerate=fs, channels=2)
                 timer(duration)  # call timer function
@@ -71,14 +73,17 @@ class AsyncRecognizer(threading.Thread):
                     json_result = json.loads(data)
                     song_playing = json_result["metadata"]["music"][0]["title"]
                     artist = json_result["metadata"]["music"][0]["artists"][0]["name"]
+                    genre = json_result["metadata"]["music"][0]["genres"][0]["name"]
                     file_entry = song_playing + " by " + artist
                     print(f"The song currently playing is {file_entry}.")
-                    app.lowerlabel.config(text=f"The song currently playing is {file_entry}.")
+                    app.lowerlabel.config(text=f"""The song currently playing is "{file_entry}".""")
                     sleep(3)
                     last_song_recognized = True
+                    print(data)
 
                 except KeyError:
                     print("No song could be recognized.")
+                    print("failed recognition: ", data)
                     app.lowerlabel.config(text="No song could be recognized.")
                     sleep(3)
                     last_song_recognized = False
@@ -89,15 +94,19 @@ class AsyncRecognizer(threading.Thread):
                         app.auxlabel.config(text="This song has been recognized before.")
                         sleep(3)
                         app.auxlabel.config(text="")
-                        db[file_entry] += 1
+                        db[file_entry][0] += 1
                     else:
-                        db[file_entry] = 1
+                        db[file_entry] = list()
+                        db[file_entry].append(1)
+                        db[file_entry].append(genre)
                         print("This is a new song!")
                         app.auxlabel.config(text="This is a new song!")
                         sleep(3)
                         app.auxlabel.config(text="")
                     file = open("output.json", "w")
-                    json.dump(db, file, indent=4)
+                    file2 = open("genres.txt", "w")
+                    json.dump(db, file, indent=4, ensure_ascii=False)
+                    file2.close()
                     file.close()
 
                 else:
@@ -130,14 +139,21 @@ class Gui(tkinter.Tk):
         # button
         self.button = tkinter.Button(text="Start Recording", command=self.call_engine, font=("Century Gothic", 12),
                                      bg=babyblue)
-        self.plot_button = tkinter.Button(text="Plot Graph", command=plot, font=("Century Gothic", 10), bg=babyblue)
+        self.clr_json = tkinter.Button(text="Clear database", command=self.clr_json, font=("Century Gothic", 10),
+                                     bg=babyblue)
+        self.plot_button = tkinter.Button(text="Plot Graph", command=plot, font=("Century Gothic", 11), bg=babyblue)
+
         self.button.pack(expand=True)
         self.plot_button.pack(expand=True)
-
+        self.clr_json.pack(expand=True)
     def call_engine(self):
         instance = AsyncRecognizer()
         instance.start()
 
+    def clr_json(self):
+        file = open("output.json", "w")
+        file.write("{}")
+        file.close()
 
 if __name__ == '__main__':
     app = Gui()
