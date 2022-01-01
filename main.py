@@ -6,7 +6,8 @@ from time import sleep
 import sounddevice as sd
 import json
 import os
-from graph import plot
+from graph import plot_2
+from webApp import run_webapp
 
 # colors
 babyblue = "#CDDEFF"
@@ -22,8 +23,8 @@ class AsyncRecognizer(threading.Thread):
             # API keys, fill with keys from acrcloud.com
             app.button.config(text="Quit program", command=lambda: os._exit(0))
 
-            access_key = os.environ.get('colinde_access_key')
-            secret_key = os.environ.get('colinde_secret_key')
+            access_key = '2be5418fe9b1172e0297d66449ace6b6'
+            secret_key = 'u1roop2UahXbHScthWE5TbfghsB6nbKqV9iECCgU'
             # var init
             wait_time = 1  # seconds to wait between recordings
             last_song = "n/a"
@@ -139,13 +140,17 @@ class Gui(tkinter.Tk):
         # button
         self.button = tkinter.Button(text="Start Recording", command=self.call_engine, font=("Century Gothic", 12),
                                      bg=babyblue)
-        self.clr_json = tkinter.Button(text="Clear database", command=self.clr_json, font=("Century Gothic", 10),
+        self.clr_json = tkinter.Button(text="Clear database", command=self.clr_json, font=("Century Gothic", 9),
                                      bg=babyblue)
-        self.plot_button = tkinter.Button(text="Plot Graph", command=plot, font=("Century Gothic", 11), bg=babyblue)
+        self.plot_button = tkinter.Button(text="Windows Graph", command=self.plot_1, font=("Century Gothic", 11), bg=babyblue)
+        self.webgrph_button = tkinter.Button(text="Web Graph", command=self.run_webapp1, font=("Century Gothic", 12),
+                                     bg=babyblue)
 
         self.button.pack(expand=True)
         self.plot_button.pack(expand=True)
+        self.webgrph_button.pack(expand=True)
         self.clr_json.pack(expand=True)
+
     def call_engine(self):
         instance = AsyncRecognizer()
         instance.start()
@@ -154,6 +159,25 @@ class Gui(tkinter.Tk):
         file = open("output.json", "w")
         file.write("{}")
         file.close()
+        app.auxlabel.config(text="Database has been cleared.")
+
+    def plot_1(self):
+        file = open("output.json")
+        dt = json.load(file)
+        if dt:
+            file.close()
+            plot_2()
+        else:
+            app.auxlabel.config(text="Cannot generate graph. No song has been recognized.")
+
+    def run_webapp1(self):
+        file = open("output.json")
+        dt = json.load(file)
+        if dt:
+            file.close()
+            run_webapp()
+        else:
+            app.auxlabel.config(text="Cannot generate graph. No song has been recognized.")
 
 if __name__ == '__main__':
     app = Gui()
