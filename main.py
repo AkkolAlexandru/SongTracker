@@ -23,8 +23,8 @@ class AsyncRecognizer(threading.Thread):
             # API keys, fill with keys from acrcloud.com
             app.button.config(text="Quit program", command=lambda: os._exit(0))
 
-            access_key = '2be5418fe9b1172e0297d66449ace6b6'
-            secret_key = 'u1roop2UahXbHScthWE5TbfghsB6nbKqV9iECCgU'
+            access_key = os.environ.get('colinde_access_key')
+            secret_key = os.environ.get('colinde_secret_key')
             # var init
             wait_time = 1  # seconds to wait between recordings
             last_song = "n/a"
@@ -104,7 +104,7 @@ class AsyncRecognizer(threading.Thread):
                         app.auxlabel.config(text="This is a new song!")
                         sleep(3)
                         app.auxlabel.config(text="")
-                    file = open("output.json", "w")
+                    file = open("output.json", "w")          
                     json.dump(db, file, indent=4, ensure_ascii=False)
                     file.close()
 
