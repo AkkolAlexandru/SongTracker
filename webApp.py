@@ -27,7 +27,7 @@ def run_webapp():
     )
     fig.update_layout(
         xaxis = go.layout.XAxis(
-            tickangle = 45
+            tickangle = 90
         ),
         title_text = f"Number of songs played: {frequency}                                "
                      f""

@@ -1,10 +1,10 @@
-import tkinter
-import threading
+from tkinter import Tk, Label, Button
+from threading import Thread
 from recognizer import ACRCloudRecognizer
 from scipy.io.wavfile import write
 from time import sleep
-import sounddevice as sd
-import json
+from sounddevice import rec, wait, PortAudioError
+from json import load, loads, dump
 import os
 from graph import plot_2
 from webApp import run_webapp
@@ -13,7 +13,7 @@ from webApp import run_webapp
 babyblue = "#CDDEFF"
 darkgray = "#707070"
 
-class AsyncRecognizer(threading.Thread):
+class AsyncRecognizer(Thread):
     def __init__(self):
         super().__init__()
 
@@ -23,13 +23,13 @@ class AsyncRecognizer(threading.Thread):
             # API keys, fill with keys from acrcloud.com
             app.button.config(text="Quit program", command=lambda: os._exit(0))
 
-            access_key = os.environ.get('colinde_access_key')
-            secret_key = os.environ.get('colinde_secret_key')
+            access_key = '2be5418fe9b1172e0297d66449ace6b6'
+            secret_key = 'u1roop2UahXbHScthWE5TbfghsB6nbKqV9iECCgU'
             # var init
             wait_time = 1  # seconds to wait between recordings
             last_song = "n/a"
             data = open("output.json", "r")
-            db = json.load(data)
+            db = load(data)
             data.close()
             song_playing = "n/a"
 
@@ -47,9 +47,9 @@ class AsyncRecognizer(threading.Thread):
                 if last_song != "n/a" and last_song_recognized:
                     app.upperlabel.config(text=f"""The last song was "{last_song}".""", fg = darkgray)
                 # start recording
-                recording = sd.rec(int(duration * fs), samplerate=fs, channels=2)
+                recording = rec(int(duration * fs), samplerate=fs, channels=2)
                 timer(duration)  # call timer function
-                sd.wait()
+                wait()
                 # write the data in filename and save it
                 write(filename, fs, recording)
 
@@ -57,7 +57,12 @@ class AsyncRecognizer(threading.Thread):
 
                 # start recording
                 filename = "rec.mp3"
-                record_audio(filename)
+                try:
+                    record_audio(filename)
+                except PortAudioError:
+                    print("No microphone found.")
+                    app.lowerlabel.config(text="No microphone found.")
+                    sleep(400)
                 app.auxlabel.config(text="")
                 # init song recognition API
                 config = {
@@ -71,7 +76,7 @@ class AsyncRecognizer(threading.Thread):
                 data = acrcloud.recognize_by_file('rec.mp3', 0)
 
                 try:
-                    json_result = json.loads(data)
+                    json_result = loads(data)
                     song_playing = json_result["metadata"]["music"][0]["title"]
                     artist = json_result["metadata"]["music"][0]["artists"][0]["name"]
                     genre = json_result["metadata"]["music"][0]["genres"][0]["name"]
@@ -104,8 +109,8 @@ class AsyncRecognizer(threading.Thread):
                         app.auxlabel.config(text="This is a new song!")
                         sleep(3)
                         app.auxlabel.config(text="")
-                    file = open("output.json", "w")          
-                    json.dump(db, file, indent=4, ensure_ascii=False)
+                    file = open("output.json", "w")
+                    dump(db, file, indent=4, ensure_ascii=False)
                     file.close()
 
                 else:
@@ -118,7 +123,7 @@ class AsyncRecognizer(threading.Thread):
                 sleep(wait_time)
 
 
-class Gui(tkinter.Tk):
+class Gui(Tk):
     def __init__(self):
         super().__init__()
 
@@ -127,21 +132,21 @@ class Gui(tkinter.Tk):
         self.minsize(width=800, height=450)
 
         # label
-        self.upperlabel = tkinter.Label(text="", font=("Century Gothic", 16), bg=babyblue)
-        self.auxlabel = tkinter.Label(text="", font=("Century Gothic", 14), bg=babyblue)
-        self.lowerlabel = tkinter.Label(text="Start recording when ready.", font=("Century Gothic", 18), bg=babyblue)
+        self.upperlabel = Label(text="", font=("Century Gothic", 16), bg=babyblue)
+        self.auxlabel = Label(text="", font=("Century Gothic", 14), bg=babyblue)
+        self.lowerlabel = Label(text="Start recording when ready.", font=("Century Gothic", 18), bg=babyblue)
 
         self.upperlabel.pack(expand=True)
         self.auxlabel.pack(expand=True)
         self.lowerlabel.pack(expand=True)
 
         # button
-        self.button = tkinter.Button(text="Start Recording", command=self.call_engine, font=("Century Gothic", 12),
+        self.button = Button(text="Start Recording", command=self.call_engine, font=("Century Gothic", 12),
                                      bg=babyblue)
-        self.clr_json = tkinter.Button(text="Clear database", command=self.clr_json, font=("Century Gothic", 9),
+        self.clr_json = Button(text="Clear database", command=self.clr_json, font=("Century Gothic", 9),
                                      bg=babyblue)
-        self.plot_button = tkinter.Button(text="Windows Graph", command=self.plot_1, font=("Century Gothic", 11), bg=babyblue)
-        self.webgrph_button = tkinter.Button(text="Web Graph", command=self.run_webapp1, font=("Century Gothic", 12),
+        self.plot_button = Button(text="Windows Graph", command=self.plot_1, font=("Century Gothic", 11), bg=babyblue)
+        self.webgrph_button = Button(text="Web Graph", command=self.run_webapp1, font=("Century Gothic", 12),
                                      bg=babyblue)
 
         self.button.pack(expand=True)
@@ -161,7 +166,7 @@ class Gui(tkinter.Tk):
 
     def plot_1(self):
         file = open("output.json")
-        dt = json.load(file)
+        dt = load(file)
         if dt:
             file.close()
             plot_2()
@@ -170,7 +175,7 @@ class Gui(tkinter.Tk):
 
     def run_webapp1(self):
         file = open("output.json")
-        dt = json.load(file)
+        dt = load(file)
         if dt:
             file.close()
             run_webapp()
