@@ -105,9 +105,7 @@ class AsyncRecognizer(threading.Thread):
                         sleep(3)
                         app.auxlabel.config(text="")
                     file = open("output.json", "w")
-                    file2 = open("genres.txt", "w")
                     json.dump(db, file, indent=4, ensure_ascii=False)
-                    file2.close()
                     file.close()
 
                 else:
